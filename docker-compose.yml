@@ -1,0 +1,62 @@
+version: "3" # docker composerのバージョンの指定
+services:
+  # image項目を用意しなければルートディレクトリとここのサービス名を合わせたものがイメージ名になる
+  next:
+    # ↑サービス名
+    build: ./next # buildするdockerfileの位置
+    container_name: next # 作成するdockerコンテナの名前
+    image: next_image
+    volumes:
+      - ./app:/app # docker内と共有するフォルダの指定
+    working_dir: /app # docker内に入った時の初期パスの指定
+    ports:
+      - 3000:3000 # コンテナにバインドするポートの指定（左:自分のPCポート、右:dookerコンテナのポート）
+    tty: true # コンテナが勝手に終了しないための設定
+    stdin_open: true # 標準入出力とエラー出力をコンテナに結びつける設定
+    environment:
+      - CHOKIDAR_USEPOLLING=true # ホットリロードを行う設定
+    depends_on:
+      - mysql
+  java:
+    build: ./java # buildするdockerfileの位置
+    container_name: java # 作成するdockerコンテナの名前
+    env_file:
+      - ./mysql/db.env
+    tty: true # コンテナが勝手に終了しないための設定
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    ports:
+      - 8080:8080
+      - 5050:5050
+    depends_on:
+      - mysql
+  mysql:
+    build: ./mysql # buildするdockerfileの位置
+    container_name: mysql # 作成するdockerコンテナの名前
+    image: mysql_image
+    env_file:
+      - ./mysql/db.env
+    volumes:
+      # 永続ディレクトリの指定
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/log:/var/log/mysql
+    ports:
+      # コンテナにバインドするポートの指定（左:自分のPCポート、右:dookerコンテナのポート）
+      - 3306:3306
+  dbclient:
+    image: phpmyadmin/phpmyadmin
+    container_name: dbclient # 作成するdockerコンテナの名前
+    environment:
+      - PMA_ARBITARY=1
+      - PMA_HOST=mysql
+      - PMA_USER=dev_usr
+      - PMA_PASSWORD=dev_usr_pass
+    links:
+      - mysql
+    ports:
+      - "4200:80"
+    volumes:
+      - ./dbclient/sessions:/sessions
+    depends_on:
+      - mysql

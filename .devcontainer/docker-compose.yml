@@ -1,0 +1,7 @@
+services:
+  next:
+    volumes:
+      - .:/app/fe_next_app:cached
+  java:
+    volumes:
+      - .:/app/be_springboot_app:cached
